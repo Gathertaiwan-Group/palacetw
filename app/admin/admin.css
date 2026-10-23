@@ -1,0 +1,82 @@
+/* WordPress-admin–like styling for /admin (the WordPress theme stylesheet is not loaded here). */
+.adm-body { margin: 0; background: #f0f0f1; color: #1d2327; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif; }
+.adm-body *, .adm-body *::before, .adm-body *::after { box-sizing: border-box; }
+.adm a { color: #2271b1; text-decoration: none; }
+.adm a:hover { color: #135e96; text-decoration: underline; }
+.adm { display: flex; min-height: 100vh; }
+.adm-side { width: 190px; flex: none; background: #1d2327; color: #f0f0f1; padding: 0 0 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.adm-side .brand { display: block; padding: 14px 14px; font-weight: 600; color: #fff; background: #101517; }
+.adm-side nav a { display: block; padding: 7px 14px; color: #f0f0f1; font-size: 13.5px; }
+.adm-side nav a:hover { background: #2c3338; color: #72aee6; text-decoration: none; }
+.adm-side nav a.on { background: #2271b1; color: #fff; }
+.adm-side nav .grp { padding: 12px 14px 4px; font-size: 11px; color: #a7aaad; text-transform: uppercase; letter-spacing: .05em; }
+.adm-main { flex: 1; min-width: 0; }
+.adm-top { height: 40px; background: #1d2327; color: #c3c4c7; display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 16px; font-size: 13px; }
+.adm-top a, .adm-top button { color: #c3c4c7; background: none; border: 0; cursor: pointer; font: inherit; padding: 0; }
+.adm-wrap { padding: 16px 24px 48px; max-width: 1400px; }
+.adm h1 { font-size: 23px; font-weight: 400; margin: 8px 0 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.adm h2 { font-size: 16px; margin: 0 0 10px; }
+.adm .btn, .adm button.btn { display: inline-block; border: 1px solid #2271b1; color: #2271b1; background: #f6f7f7; border-radius: 3px; padding: 4px 10px; font-size: 13px; cursor: pointer; line-height: 1.6; text-decoration: none; }
+.adm .btn:hover { background: #f0f0f1; text-decoration: none; }
+.adm .btn-p { background: #2271b1; color: #fff; }
+.adm .btn-p:hover { background: #135e96; color: #fff; }
+.adm .btn-d { border-color: #b32d2e; color: #b32d2e; }
+.adm .btn-s { padding: 1px 8px; font-size: 12px; }
+.adm .card { background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04); padding: 14px 16px; margin-bottom: 16px; }
+.adm .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.adm .cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+@media (max-width: 960px) { .adm .grid2 { grid-template-columns: 1fr; } .adm-side { width: 150px; } }
+@media (max-width: 640px) { .adm { flex-direction: column; } .adm-side { width: 100%; height: auto; position: static; } .adm-side nav { display: flex; flex-wrap: wrap; } .adm-wrap { padding: 12px; } }
+.adm table.list { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #c3c4c7; }
+.adm table.list th, .adm table.list td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #f0f0f1; vertical-align: top; }
+.adm table.list th { font-weight: 400; border-bottom: 1px solid #c3c4c7; background: #fff; }
+.adm table.list tr:nth-child(even) td { background: #f6f7f7; }
+.adm table.list .muted, .adm .muted { color: #646970; font-size: 12.5px; }
+.adm .row-actions { font-size: 12.5px; color: #a7aaad; }
+.adm .row-actions a, .adm .row-actions button { margin-right: 8px; }
+.adm .linkbtn { background: none; border: 0; padding: 0; color: #2271b1; cursor: pointer; font: inherit; }
+.adm .linkbtn.del { color: #b32d2e; }
+.adm label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: 13px; }
+.adm label.inline { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 12px 4px 0; }
+.adm input[type=text], .adm input[type=email], .adm input[type=url], .adm input[type=number], .adm input[type=password], .adm input[type=datetime-local], .adm input[type=date], .adm input[type=search], .adm select, .adm textarea {
+  width: 100%; border: 1px solid #8c8f94; border-radius: 4px; padding: 5px 8px; font: inherit; background: #fff; color: #2c3338; }
+.adm input.title-input { font-size: 20px; padding: 6px 10px; }
+.adm textarea { min-height: 80px; }
+.adm textarea.code { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; min-height: 360px; }
+.adm .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+.adm .filters input, .adm .filters select { width: auto; }
+.adm .subsubsub { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.adm .subsubsub .cur { font-weight: 600; color: #000; }
+.adm .notice { background: #fff; border-left: 4px solid #00a32a; padding: 8px 12px; margin: 0 0 16px; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
+.adm .notice.err { border-left-color: #d63638; }
+.adm .badge { display: inline-block; padding: 0 8px; border-radius: 10px; background: #dcdcde; font-size: 12px; line-height: 20px; }
+.adm .st-publish, .adm .st-completed, .adm .st-processing { background: #c6e1c6; color: #2c4700; }
+.adm .st-draft, .adm .st-pending, .adm .st-on-hold { background: #f8dda7; color: #573b00; }
+.adm .st-future { background: #c5d9ed; color: #2e4453; }
+.adm .st-trash, .adm .st-cancelled, .adm .st-failed, .adm .st-refunded { background: #eba3a3; color: #761919; }
+.adm .pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin: 10px 0; font-size: 13px; }
+.adm .thumb { width: 48px; height: 48px; object-fit: cover; background: #f0f0f1; border: 1px solid #dcdcde; }
+.adm .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.adm .mgrid a, .adm .mgrid button.mi { display: block; background: #fff; border: 1px solid #dcdcde; padding: 4px; text-align: center; font-size: 11.5px; color: #50575e; overflow: hidden; cursor: pointer; }
+.adm .mgrid img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f0f0f1; display: block; }
+.adm .mgrid .fname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-top: 4px; }
+.adm .stat { background: #fff; border: 1px solid #c3c4c7; padding: 14px; }
+.adm .stat b { display: block; font-size: 26px; font-weight: 400; }
+.adm pre.json { background: #f6f7f7; border: 1px solid #dcdcde; padding: 8px; font-size: 12px; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all; margin: 4px 0; }
+.adm .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.adm .checklist { max-height: 220px; overflow: auto; border: 1px solid #dcdcde; padding: 6px 8px; background: #fff; }
+.adm .checklist label { font-weight: 400; margin: 2px 0; display: flex; gap: 6px; align-items: center; }
+/* rich editor */
+.adm .re { border: 1px solid #8c8f94; border-radius: 4px; background: #fff; }
+.adm .re-bar { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px; border-bottom: 1px solid #dcdcde; background: #f6f7f7; position: sticky; top: 0; z-index: 2; }
+.adm .re-bar button, .adm .re-bar select { border: 1px solid transparent; background: none; padding: 3px 7px; border-radius: 3px; cursor: pointer; font-size: 13px; color: #1d2327; width: auto; }
+.adm .re-bar button:hover { border-color: #8c8f94; background: #fff; }
+.adm .re-bar button.on { background: #1d2327; color: #fff; }
+.adm .re-area { min-height: 420px; max-height: 75vh; overflow: auto; padding: 14px 16px; outline: none; line-height: 1.7; }
+.adm .re-area img { max-width: 100%; height: auto; }
+.adm .re-area blockquote { border-left: 4px solid #dcdcde; margin: 0 0 1em; padding-left: 12px; color: #50575e; }
+.adm .re-src { width: 100%; min-height: 420px; border: 0; padding: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.adm .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.adm .modal-box { background: #fff; width: min(980px, 100%); max-height: 90vh; overflow: auto; padding: 16px; }
+.adm .menu-row { display: grid; grid-template-columns: 24px 1.2fr 1.6fr 90px 1fr auto; gap: 6px; align-items: center; padding: 6px; background: #fff; border: 1px solid #dcdcde; margin-bottom: 4px; }
+.adm .login { max-width: 340px; margin: 10vh auto; }

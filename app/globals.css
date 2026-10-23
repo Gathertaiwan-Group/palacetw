@@ -1,0 +1,27 @@
+/* The visual layer is the original OceanWP/Elementor/WooCommerce stylesheet (public/wp/theme.css).
+   Tailwind is loaded WITHOUT preflight and with automatic class detection turned off, so
+   WordPress class names such as .grid / .list / .hidden / .container never become utilities. */
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+/* Only scan our own Tailwind-only files (none of the WordPress markup). */
+@source "../components/tw";
+
+/* small additions for features the old site implemented in jQuery */
+.wpb .woocommerce-product-gallery { opacity: 1 !important; }
+#owp-qv-wrap.is-visible { display: block; }
+.pt-lightbox { position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,.9); display: flex; align-items: center; justify-content: center; }
+.pt-lightbox img { max-width: 92vw; max-height: 86vh; object-fit: contain; }
+.pt-lightbox button { position: absolute; color: #fff; background: transparent; border: 0; font-size: 34px; line-height: 1; padding: 12px; cursor: pointer; }
+.pt-lightbox .pt-close { top: 8px; right: 12px; }
+.pt-lightbox .pt-prev { left: 8px; top: 50%; transform: translateY(-50%); }
+.pt-lightbox .pt-next { right: 8px; top: 50%; transform: translateY(-50%); }
+.pt-lightbox .pt-count { position: absolute; top: 18px; left: 18px; color: #ccc; font-size: 13px; }
+.woocommerce-product-gallery__image img.pt-zoomed { transform: scale(1.6); transition: transform .2s; }
+/* old site served 265x331 hard-cropped thumbnails; we store only the original, so crop with CSS */
+.woo-entry-image img.woo-entry-image-main { width: 265px !important; max-width: 100% !important; height: auto !important; aspect-ratio: 265 / 331; object-fit: cover; }
+.qty-discount-table { width: 100%; margin: 0 0 20px; }
+.qty-discount-table th, .qty-discount-table td { padding: 6px 10px; border: 1px solid #eaeaea; text-align: left; }
+.pt-notice-error { color: #b81c23; }
+/* The old product pages render without the page title bar (old screenshots of every product page). */
+.wpb.single-product .page-header { display: none; }
