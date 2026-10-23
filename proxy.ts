@@ -19,6 +19,20 @@ async function redirectFor(source: string) {
 export async function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
+  // trailingSlash redirect (Next's built-in one is disabled by skipTrailingSlashRedirect so /api/* isn't redirected).
+  // Uses the raw request URL: nextUrl may already be slash-normalised.
+  {
+    const raw = new URL(req.url);
+    const p = raw.pathname;
+    if (!p.startsWith("/.well-known")) {
+      const last = p.slice(p.lastIndexOf("/") + 1);
+      let to: string | null = null;
+      if (last && !last.includes(".")) to = p + "/";
+      else if (/\/[^/]+\.\w+\/$/.test(p)) to = p.replace(/\/$/, "");
+      if (to) return NextResponse.redirect(new URL(to + raw.search, req.url), 308);
+    }
+  }
+
   // /admin: mark the request (root layout skips the WordPress theme) and refresh the Supabase Auth session cookies.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const next = () => {
@@ -56,6 +70,15 @@ export async function proxy(req: NextRequest) {
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "private, no-store");
     return res;
+  }
+
+  // WordPress oEmbed card: /<permalink>/embed/ → rendered by app/api/embed
+  const em = pathname.match(/^\/(.+\/)embed\/?$/);
+  if (em && !pathname.startsWith("/wp-content/")) {
+    const u = new URL("/api/embed/", req.url);
+    u.search = "";
+    u.searchParams.set("path", "/" + em[1]);
+    return NextResponse.rewrite(u);
   }
 
   const att = searchParams.get("attachment_id");

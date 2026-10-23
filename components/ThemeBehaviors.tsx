@@ -85,6 +85,27 @@ export default function ThemeBehaviors() {
     on(cartLi, "mouseenter", () => document.body.classList.add("show-cart"));
     on(cartLi, "mouseleave", () => document.body.classList.remove("show-cart"));
 
+    /* mobile cart icon opens the off-canvas cart sidebar (OceanWP woo-mini-cart.js) instead of navigating */
+    const sideWrap = document.getElementById("oceanwp-cart-sidebar-wrap");
+    const openSide = (e: Event) => {
+      if (!sideWrap) return;
+      e.preventDefault();
+      e.stopPropagation();
+      sideWrap.style.display = "block";
+      requestAnimationFrame(() => document.body.classList.add("show-cart-sidebar"));
+    };
+    const closeSide = (e: Event) => {
+      e.preventDefault();
+      document.body.classList.remove("show-cart-sidebar");
+      setTimeout(() => { if (sideWrap && !document.body.classList.contains("show-cart-sidebar")) sideWrap.style.display = ""; }, 300);
+    };
+    document.querySelectorAll(".oceanwp-mobile-menu-icon a.wcmenucart").forEach((a) => on(a, "click", openSide));
+    on(sideWrap?.querySelector(".oceanwp-cart-close") ?? null, "click", closeSide);
+    on(sideWrap?.querySelector(".oceanwp-cart-sidebar-overlay") ?? null, "click", closeSide);
+    sideWrap?.querySelectorAll(".widget_shopping_cart_content").forEach((c) => on(c, "click", (e: Event) => {
+      if ((e.target as Element)?.closest?.("a[href]")) { document.body.classList.remove("show-cart-sidebar"); if (sideWrap) sideWrap.style.display = ""; }
+    }));
+
     /* Elementor entrance animations */
     const animated = Array.from(document.querySelectorAll<HTMLElement>(".elementor-invisible"));
     if (animated.length) {

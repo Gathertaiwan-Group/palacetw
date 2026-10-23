@@ -80,7 +80,7 @@ export async function PostView({ ix, post }: { ix: SiteIndex; post: Post }) {
   const cats = termsOf(ix, post.id, "category").map((t) => `post-in-category-${t.slug}`).join(" ");
   const body = `wp-singular post-template-default single single-post postid-${post.id} single-format-standard ${BASE_BODY} ${LAYOUT.right} ${cats} ${TAIL_BODY}`;
   return (
-    <Shell bodyClass={body} header={<PageHeader title="Blog" crumbs={[{ label: post.title }]} />}>
+    <Shell bodyClass={body} header={<PageHeader title="Blog" crumbs={[...postParentCrumbs(post), { label: post.title }]} />}>
       <ContentWrap sidebars={<EmptySidebar side="right" />}>
         <article id={`post-${post.id}`}>
           {img ? <div className="thumbnail"><img src={img.public_url} alt={post.title} width={img.width || undefined} height={img.height || undefined} className="attachment-full size-full wp-post-image" /></div> : null}
@@ -238,4 +238,11 @@ export function NotFoundView() {
       </ContentWrap>
     </Shell>
   );
+}
+
+/** Rank Math breadcrumb ancestors that WordPress derived from post_parent (kept in posts.meta.breadcrumb_parents, e.g. post 2347 "x" » "c"). */
+function postParentCrumbs(post: Post): { label: string; href?: string }[] {
+  const list = post.meta?.breadcrumb_parents;
+  if (!Array.isArray(list)) return [];
+  return list.filter((c: any) => c && typeof c.label === "string").map((c: any) => ({ label: c.label, href: typeof c.href === "string" ? c.href : undefined }));
 }

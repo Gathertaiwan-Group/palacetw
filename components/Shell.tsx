@@ -213,7 +213,7 @@ export default async function Shell({
       </div>
       <a aria-label="Scroll to the top of the page" href="#" id="scroll-top" className="scroll-top-right"><i className=" fa fa-angle-up" aria-hidden="true" role="img" /></a>
       <QuickView />
-      <div id="oceanwp-cart-sidebar-wrap"><div className="oceanwp-cart-sidebar"><a href="#" className="oceanwp-cart-close">×</a><p className="owp-cart-title">Cart</p><div className="divider" /><div className="owp-mini-cart"><div className="widget woocommerce widget_shopping_cart"><div className="widget_shopping_cart_content" /></div></div></div><div className="oceanwp-cart-sidebar-overlay" /></div>
+      <div id="oceanwp-cart-sidebar-wrap"><div className="oceanwp-cart-sidebar"><a href="#" className="oceanwp-cart-close">×</a><p className="owp-cart-title">Cart</p><div className="divider" /><div className="owp-mini-cart"><div className="widget woocommerce widget_shopping_cart"><div className="widget_shopping_cart_content"><MiniCart /></div></div></div></div><div className="oceanwp-cart-sidebar-overlay" /></div>
       <ThemeBehaviors />
     </div>
   );

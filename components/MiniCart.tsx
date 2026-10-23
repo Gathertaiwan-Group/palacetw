@@ -4,7 +4,12 @@ import { useCart, money } from "./useCart";
 
 export default function MiniCart() {
   const cart = useCart();
-  if (!cart || !cart.items.length) return <p className="woocommerce-mini-cart__empty-message">No products in the cart.</p>;
+  if (!cart || !cart.items.length)
+    return (
+      <p className="woocommerce-mini-cart__empty-message">
+        No products in the cart. <a className="owp-cart-shop-link" href="/shop-2/">Add Products</a>
+      </p>
+    );
   return (
     <>
       <ul className="woocommerce-mini-cart cart_list product_list_widget">
