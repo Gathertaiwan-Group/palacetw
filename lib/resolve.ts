@@ -62,7 +62,8 @@ export function resolve(ix: SiteIndex, rawSegs: string[]): Route {
   if (page) {
     if (page.id === SHOP_PAGE && segs.length === 1) return { kind: "shop", page, num, base: `/${page.slug}/` };
     if (page.id === BLOG_PAGE && segs.length === 1) return { kind: "blog", page, num, base: `/${page.slug}/` };
-    if (paged) return { kind: "notfound" };
+    // WordPress serves a static page for /page-slug/page/N/ too (same content, canonical without /page/N/)
+    if (paged && segs.length !== 1) return { kind: "notfound" };
     if (CART_PAGES.includes(page.id) && segs.length === 1) return { kind: "cart", page };
     if (CHECKOUT_PAGES.includes(page.id)) {
       if (segs.length === 1) return { kind: "checkout", page };

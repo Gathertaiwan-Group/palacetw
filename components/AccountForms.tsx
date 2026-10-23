@@ -8,9 +8,11 @@ function sb() {
   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 }
 
-export function LoginRegister({ base, initialMode = "login" }: { base: string; initialMode?: "login" | "register" }) {
+/** `allowRegister` mirrors WooCommerce's "Allow customers to create an account on the My account page"
+ *  (settings.woocommerce.enable_myaccount_registration). It was off on the old site, so by default only the login form shows. */
+export function LoginRegister({ base, initialMode = "login", allowRegister = false }: { base: string; initialMode?: "login" | "register"; allowRegister?: boolean }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">(initialMode);
+  const [mode, setMode] = useState<"login" | "register">(allowRegister ? initialMode : "login");
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,9 +43,14 @@ export function LoginRegister({ base, initialMode = "login" }: { base: string; i
         {ok ? <div className="woocommerce-message" role="alert">{ok}</div> : null}
       </div>
       <div className="oceanwp-loginform-wrap">
-        {mode === "login" ? (
-          // the old site had WooCommerce registration disabled on this form; registration is reachable via ?action=register
+        {!allowRegister ? (
           <ul className="owp-account-links registration-disabled"><li className="login"><span className="owp-account-link current">Login</span></li></ul>
+        ) : mode === "login" ? (
+          <ul className="owp-account-links">
+            <li className="login"><span className="owp-account-link current">Login</span></li>
+            <li className="or">Or</li>
+            <li className="register"><a href="#" className="owp-account-link" onClick={(e) => { e.preventDefault(); setMode("register"); setErr(null); }}>Register</a></li>
+          </ul>
         ) : (
           <ul className="owp-account-links">
             <li className="login"><a href="#" className="owp-account-link" onClick={(e) => { e.preventDefault(); setMode("login"); setErr(null); }}>Login</a></li>
@@ -70,7 +77,6 @@ export function LoginRegister({ base, initialMode = "login" }: { base: string; i
                 <button type="submit" className="woocommerce-button button woocommerce-form-login__submit" name="login" value="Log in" disabled={busy}>Log in</button>
               </p>
               <p className="woocommerce-LostPassword lost_password"><Link href={`${base}lost-password/`}>Lost your password?</Link></p>
-              <p className="pt-register-link" style={{ textAlign: "center", fontSize: 13 }}><a href="#" onClick={(e) => { e.preventDefault(); setMode("register"); setErr(null); }}>還沒有帳號？註冊</a></p>
             </form>
           </>
         ) : (

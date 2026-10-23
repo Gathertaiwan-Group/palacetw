@@ -170,11 +170,11 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
                 </div>
               ) : null}
             </div>
-            {upsells.length ? <section className="up-sells upsells products"><h2>You may also like&hellip;</h2><ProductList ix={ix} posts={upsells} /></section> : null}
+            {upsells.length ? <section className="up-sells upsells products"><h2>You may also like&hellip;</h2><ProductList ix={ix} posts={upsells} desc={false} /></section> : null}
             {seeded.length ? (
               <section className="related products">
                 <h2>Related products</h2>
-                <ProductList ix={ix} posts={seeded} />
+                <ProductList ix={ix} posts={seeded} desc={false} />
               </section>
             ) : null}
           </div>

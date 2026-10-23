@@ -23,5 +23,11 @@
 .qty-discount-table { width: 100%; margin: 0 0 20px; }
 .qty-discount-table th, .qty-discount-table td { padding: 6px 10px; border: 1px solid #eaeaea; text-align: left; }
 .pt-notice-error { color: #b81c23; }
-/* The old product pages render without the page title bar (old screenshots of every product page). */
-.wpb.single-product .page-header { display: none; }
+/* Old single product pages: mystickymenu fixes the 101px header at load, so the page-title bar sits underneath it and
+   #content-wrap starts right after the (hidden) title bar: images/title at y=106 (desktop) / nav y=138 (mobile, 390px). */
+.wpb.single-product #main { margin-top: -101px; }
+/* contain the header's floats so the title bar's .clr clearfix doesn't clear below them */
+.wpb.single-product #mysticky-nav { display: flow-root; }
+/* OceanWP customSelect(): the transparent native select is laid over span.theme-select */
+.wpb .woocommerce-ordering { position: relative; }
+.wpb .woocommerce-ordering .theme-select { min-width: 228px; }

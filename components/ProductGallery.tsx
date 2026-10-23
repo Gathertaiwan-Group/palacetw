@@ -20,25 +20,29 @@ export default function ProductGallery({ images }: { images: Img[] }) {
   }, [lb, images.length]);
   if (!images.length) return <div className="woocommerce-product-gallery woocommerce-product-gallery--without-images images" />;
   const cur = images[idx];
+  const slide = (
+    <figure className="woocommerce-product-gallery__wrapper">
+      <div data-thumb={cur.src} className="woocommerce-product-gallery__image flex-active-slide" style={{ position: "relative", overflow: "hidden" }}
+        onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setZoom({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, bw: r.width, bh: r.height }); }}
+        onMouseLeave={() => setZoom(null)}>
+        <a href={cur.src} onClick={(e) => { e.preventDefault(); setLb(idx); }}>
+          <img width={cur.w || 504} height={cur.h || 504} src={cur.src} className="wp-post-image" alt={cur.alt} title={cur.title} decoding="async" fetchPriority="high" />
+        </a>
+        {zoom && (cur.w || 0) > zoom.bw ? (
+          <img role="presentation" alt="" src={cur.src} className="zoomImg" style={{ position: "absolute", top: -zoom.y * ((cur.h || 0) - zoom.bh), left: -zoom.x * ((cur.w || 0) - zoom.bw), opacity: 1, width: cur.w || undefined, height: cur.h || undefined, border: "none", maxWidth: "none", maxHeight: "none", pointerEvents: "none" }} />
+        ) : null}
+      </div>
+    </figure>
+  );
   return (
     <div className={`woocommerce-product-gallery woocommerce-product-gallery--with-images woocommerce-product-gallery--columns-4 images`} data-columns="4" style={{ opacity: 1 }}>
-      <a href="#" className="woocommerce-product-gallery__trigger" onClick={(e) => { e.preventDefault(); setLb(idx); }}>
-        <span aria-hidden="true">🔍</span><span className="screen-reader-text">View full-screen image gallery</span>
+      <a href="#" role="button" className="woocommerce-product-gallery__trigger" aria-haspopup="dialog" aria-label="View full-screen image gallery" onClick={(e) => { e.preventDefault(); setLb(idx); }}>
+        <span aria-hidden="true">🔍</span>
       </a>
-      <div className="flex-viewport" style={{ overflow: "hidden", position: "relative" }}>
-        <figure className="woocommerce-product-gallery__wrapper">
-          <div data-thumb={cur.src} className="woocommerce-product-gallery__image flex-active-slide" style={{ position: "relative", overflow: "hidden" }}
-            onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setZoom({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, bw: r.width, bh: r.height }); }}
-            onMouseLeave={() => setZoom(null)}>
-            <a href={cur.src} onClick={(e) => { e.preventDefault(); setLb(idx); }}>
-              <img width={cur.w || 504} height={cur.h || 504} src={cur.src} className="wp-post-image" alt={cur.alt} title={cur.title} decoding="async" fetchPriority="high" />
-            </a>
-            {zoom && (cur.w || 0) > zoom.bw ? (
-              <img role="presentation" alt="" src={cur.src} className="zoomImg" style={{ position: "absolute", top: -zoom.y * ((cur.h || 0) - zoom.bh), left: -zoom.x * ((cur.w || 0) - zoom.bw), opacity: 1, width: cur.w || undefined, height: cur.h || undefined, border: "none", maxWidth: "none", maxHeight: "none", pointerEvents: "none" }} />
-            ) : null}
-          </div>
-        </figure>
-      </div>
+      {/* flexslider only wraps the slides in .flex-viewport (margin-bottom 20px) when there is more than one image */}
+      {images.length > 1 ? (
+        <div className="flex-viewport" style={{ overflow: "hidden", position: "relative" }}>{slide}</div>
+      ) : slide}
       {images.length > 1 ? (
         <ol className="flex-control-nav flex-control-thumbs">
           {images.map((im, i) => (

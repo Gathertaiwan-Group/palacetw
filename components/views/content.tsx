@@ -180,7 +180,7 @@ export function SearchView({ ix, q, results, page }: { ix: SiteIndex; q: string;
   const title = results.length ? `${results.length} Search Results Found` : "Nothing Found";
   return (
     <Shell bodyClass={`search ${results.length ? "search-results" : "search-no-results"} ${BASE_BODY} ${LAYOUT.right} ${TAIL_BODY}`}
-      header={<PageHeader title={title} subheading={<>You searched for: &quot;{q}&quot;</>} crumbs={[{ label: `您正在搜尋 ${q}` }]} />}>
+      header={<PageHeader title={title} subheading={<>You searched for: &quot;{q}&quot;</>} crumbs={[{ label: "您正在搜尋" }]} />}>
       <ContentWrap sidebars={<EmptySidebar side="right" />}>
         {slice.length ? (
           <>

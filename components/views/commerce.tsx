@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Shell, { PageHeader, ContentWrap } from "../Shell";
-import { type Post, type SiteIndex } from "@/lib/data";
+import { type Post, type SiteIndex, getIndex, setting } from "@/lib/data";
 import { viewCart } from "@/lib/cart";
 import { currentUser, customerFor } from "@/lib/auth";
 import { admin } from "@/lib/supabase";
@@ -122,7 +122,7 @@ export async function AccountView({ page, sub, arg, register = false }: { page: 
   const user = await currentUser();
   if (!user) {
     if (sub === "lost-password") return <Frame page={page} extraBody="woocommerce-account woocommerce-page woocommerce-lost-password" title="Lost password"><LostPassword /></Frame>;
-    return <Frame page={page} extraBody="woocommerce-account woocommerce-page"><LoginRegister base={base} initialMode={register ? "register" : "login"} /></Frame>;
+    return <Frame page={page} extraBody="woocommerce-account woocommerce-page"><LoginRegister base={base} initialMode={register ? "register" : "login"} allowRegister={setting<{ enable_myaccount_registration?: boolean }>(await getIndex(), "woocommerce", {}).enable_myaccount_registration === true} /></Frame>;
   }
   const cust = await customerFor(user);
   const sb = admin();

@@ -116,7 +116,12 @@ export default function ThemeBehaviors() {
     on(listBtn, "click", (e) => { e.preventDefault(); setView("list"); });
     try { if (gridBtn && localStorage.getItem("pt-view") === "list") setView("list"); } catch {}
     document.querySelectorAll<HTMLSelectElement>("form.woocommerce-ordering select.orderby").forEach((sel) =>
-      on(sel, "change", () => sel.form?.submit()),
+      on(sel, "change", () => {
+        // OceanWP customSelect: mirror the chosen option into the visible span, then submit
+        const inner = sel.parentElement?.querySelector(".theme-selectInner");
+        if (inner) inner.textContent = sel.options[sel.selectedIndex]?.text || "";
+        sel.form?.submit();
+      }),
     );
 
     /* WooCommerce tabs */

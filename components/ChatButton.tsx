@@ -1,11 +1,12 @@
 import { getIndex, setting } from "@/lib/data";
 
-/** The old site used the Facebook Customer Chat plugin (discontinued by Meta in 2024-05);
- *  replaced by a Messenger link bubble at the same position (bottom-right). */
+/** The old site loaded the Facebook Customer Chat plugin, but Meta discontinued it in 2024-05 and it no longer renders,
+ *  so the old site's real pages show no chat button. A Messenger link bubble at the same position (bottom-right) is
+ *  available but only shown when settings.chat_widget.enabled is true (default off, matching the old site). */
 export default async function ChatButton() {
   const ix = await getIndex();
-  const chat = setting<{ url?: string }>(ix, "chat_widget", {});
-  if (!chat.url) return null;
+  const chat = setting<{ url?: string; enabled?: boolean }>(ix, "chat_widget", {});
+  if (chat.enabled !== true || !chat.url) return null;
   return (
     <a href={chat.url} target="_blank" rel="noopener" aria-label="Facebook Messenger" className="fb-customerchat pt-chat-bubble"
       style={{ position: "fixed", right: 18, bottom: 70, width: 50, height: 50, borderRadius: "50%", background: "#0A7CFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,.15)", zIndex: 9998 }}>

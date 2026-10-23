@@ -51,7 +51,9 @@ function EntryImage({ ix, post, href }: { ix: SiteIndex; post: Post; href: strin
   );
 }
 
-export function ProductCard({ ix, post, pos, cols = 3 }: { ix: SiteIndex; post: Post; pos: number; cols?: number }) {
+/** `desc`: OceanWP prints <li class="woo-desc"> only in the shop/archive loop (for list view); the related/up-sell
+ *  loops on single product pages don't have it. */
+export function ProductCard({ ix, post, pos, cols = 3, desc = true }: { ix: SiteIndex; post: Post; pos: number; cols?: number; desc?: boolean }) {
   const prod = productOf(ix, post.id);
   const href = link(post);
   const cats = termsOf(ix, post.id, "product_cat");
@@ -69,7 +71,7 @@ export function ProductCard({ ix, post, pos, cols = 3 }: { ix: SiteIndex; post: 
           <li className="title"><h2><Link href={href}>{post.title}</Link></h2></li>
           <li className="price-wrap">{pi.has || variable ? <span className="price"><PriceHtml ix={ix} id={post.id} /></span> : null}</li>
           <li className="rating" />
-          <li className="woo-desc">{stripTags(prod?.short_description || "")}</li>
+          {desc ? <li className="woo-desc">{stripTags(prod?.short_description || "")}</li> : null}
           <li className="btn-wrap clr">
             {purch && !variable ? (
               <AddToCartButton productId={post.id} sku={prod?.sku || ""} title={post.title} href={href} />
@@ -85,10 +87,10 @@ export function ProductCard({ ix, post, pos, cols = 3 }: { ix: SiteIndex; post: 
   );
 }
 
-export function ProductList({ ix, posts, cols = 3 }: { ix: SiteIndex; posts: Post[]; cols?: number }) {
+export function ProductList({ ix, posts, cols = 3, desc = true }: { ix: SiteIndex; posts: Post[]; cols?: number; desc?: boolean }) {
   return (
     <ul className="products oceanwp-row clr grid tablet-col tablet-2-col">
-      {posts.map((p, i) => <ProductCard key={p.id} ix={ix} post={p} pos={i} cols={cols} />)}
+      {posts.map((p, i) => <ProductCard key={p.id} ix={ix} post={p} pos={i} cols={cols} desc={desc} />)}
     </ul>
   );
 }
@@ -103,9 +105,14 @@ export function ShopToolbar({ base, orderby, perPage, query }: { base: string; o
         <a href="#" id="oceanwp-list" title="List view" className=" list-btn"><i className=" icon-list" aria-hidden="true" role="img" /></a>
       </nav>
       <form className="woocommerce-ordering" method="get" action={base}>
-        <select name="orderby" className="orderby" aria-label="Shop order" defaultValue={orderby}>
+        {/* OceanWP's customSelect(): the real select is transparent and sits over span.theme-select (bordered box + arrow) */}
+        <select name="orderby" className="orderby hasCustomSelect" aria-label="Shop order" defaultValue={orderby}
+          style={{ opacity: 0, position: "absolute", height: 34, fontSize: 13, appearance: "menulist-button", width: "100%", left: 0, top: 0, zIndex: 2, cursor: "pointer" }}>
           {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
+        <span className="theme-select orderby" style={{ display: "inline-block" }}>
+          <span className="theme-selectInner" style={{ display: "inline-block" }}>{(opts.find(([v]) => v === orderby) || opts[0])[1]}</span>
+        </span>
         <input type="hidden" name="paged" value="1" />
         {hidden.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       </form>

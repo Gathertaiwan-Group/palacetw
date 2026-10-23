@@ -131,9 +131,8 @@ export function PageHeader({ title, crumbs, subheading }: { title: string; crumb
     <header className="page-header">
       <div className="container clr page-header-inner">
         <h1 className="page-header-title clr" itemProp="headline">{title}</h1>
-        {subheading ? (
-          <div className="clr page-subheading">{subheading}{crumbs ? <Breadcrumbs crumbs={crumbs} /> : null}</div>
-        ) : crumbs ? <Breadcrumbs crumbs={crumbs} /> : null}
+        {subheading ? <div className="clr page-subheading">{subheading}</div> : null}
+        {crumbs ? <Breadcrumbs crumbs={crumbs} /> : null}
       </div>
     </header>
   );
