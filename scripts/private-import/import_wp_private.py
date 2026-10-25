@@ -188,7 +188,7 @@ for p in sorted(orders_src, key=lambda p: p["ID"]):
         "date_paid": ts_unix(m.get("_date_paid")) or ts_unix(m.get("_paid_date")) if m.get("_date_paid") else None,
         "date_completed": ts_unix(m.get("_date_completed")) if m.get("_date_completed") else None,
         "meta": {k: v for k, v in {
-            "source": "wp", "wp_customer_user": int(m.get("_customer_user") or 0),
+            "source": "wp", "_order_key": m.get("_order_key") or None, "wp_customer_user": int(m.get("_customer_user") or 0),
             "order_version": m.get("_order_version"), "shipping_method": php_strings(ship_method) if ship_method else None,
             "order_stock_reduced": m.get("_order_stock_reduced"), "recorded_sales": m.get("_recorded_sales"),
             "is_vat_exempt": m.get("is_vat_exempt"),

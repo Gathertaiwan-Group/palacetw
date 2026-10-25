@@ -33,9 +33,12 @@ export async function POST(req: Request) {
   const customer = user ? await customerFor(user) : null;
   const sb = admin();
   const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
+  // WooCommerce stamps new orders with the store currency (woocommerce_currency); read it from settings, not a literal.
+  const { data: wooRow } = await sb.from("settings").select("value").eq("key", "woocommerce").maybeSingle();
+  const currency = String((wooRow?.value as { currency?: string } | null)?.currency || "").trim().toUpperCase() || "TWD";
   const { data: order, error } = await sb.from("orders").insert({
     status: "pending",
-    currency: "TWD",
+    currency,
     customer_id: customer?.id ?? null,
     billing, shipping,
     payment_method: "pending",

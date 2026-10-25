@@ -24,6 +24,10 @@ export async function currentUser() {
 /** Find (or create) the site_palacetw.customers row linked to a Supabase auth user. */
 export async function customerFor(user: { id: string; email?: string | null }, create = true) {
   const sb = admin();
+  // Site administrators are not customers: never link or auto-create a customers row for them
+  // (keeps the customer count equal to the imported WooCommerce customers).
+  const { data: isAdmin } = await sb.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
+  if (isAdmin) return null;
   const { data } = await sb.from("customers").select("*").eq("auth_user_id", user.id).maybeSingle();
   if (data) return data;
   if (user.email) {

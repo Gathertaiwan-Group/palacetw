@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { type Post, type SiteIndex, type Term, mediaById, productOf, priceInfo } from "./data";
+import { type Post, type SiteIndex, type Term, mediaById, productOf, priceInfo, setting } from "./data";
 import { SITE_NAME, SITE_URL, abs, stripTags } from "./site";
 
 const ROBOTS_INDEX = "index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large";
@@ -98,7 +98,7 @@ export function ProductHeadExtras({ ix, p }: { ix: SiteIndex; p: Post }) {
       <meta name="twitter:data1" content={`$${(pi.price ?? 0).toFixed(2)}`} />
       <meta name="twitter:label2" content="Availability" />
       <meta name="twitter:data2" content={prod?.stock_status === "outofstock" ? "Out of stock" : "In stock"} />
-      {pi.has ? <><meta property="product:price:amount" content={String(pi.price)} /><meta property="product:price:currency" content="TWD" /></> : null}
+      {pi.has ? <><meta property="product:price:amount" content={String(pi.price)} /><meta property="product:price:currency" content={String(setting<{ currency?: string }>(ix, "woocommerce", {}).currency || "TWD")} /></> : null}
       <meta property="product:availability" content={prod?.stock_status === "outofstock" ? "out of stock" : "instock"} />
     </>
   );
