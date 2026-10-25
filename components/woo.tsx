@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { imgProps, SIZES } from "@/lib/img";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { type Post, type SiteIndex, link, mediaById, priceInfo, productOf, termsOf, termLink, isPurchasable } from "@/lib/data";
@@ -44,7 +45,7 @@ function EntryImage({ ix, post, href }: { ix: SiteIndex; post: Post; href: strin
   return (
     <div className="woo-entry-image clr">
       <Link href={href} className="woocommerce-LoopProduct-link">
-        {img ? <img width={265} height={331} src={img.public_url} className="woo-entry-image-main" alt={post.title} itemProp="image" decoding="async" loading="lazy" /> : <img width={265} height={331} src="/wp/placeholder.png" className="woo-entry-image-main" alt="Placeholder" />}
+        {img ? <img {...imgProps(img, SIZES.card)} width={265} height={331} className="woo-entry-image-main" alt={post.title} itemProp="image" /> : <img width={265} height={331} src="/wp/placeholder.png" className="woo-entry-image-main" alt="Placeholder" />}
       </Link>
       <a href="#" id={`product_id_${post.id}`} className="owp-quick-view" data-product_id={post.id}><i className=" icon-eye" aria-hidden="true" role="img" /> Quick View</a>
     </div>

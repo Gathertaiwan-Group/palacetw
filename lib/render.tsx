@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { db } from "@/lib/supabase";
-import { getIndex, published, visibleProducts, objectsInTerm, blogPosts } from "@/lib/data";
+import { getIndex, published, visibleProducts, objectsInTerm, blogPosts, setting, type SiteIndex } from "@/lib/data";
 import { resolve, blogFor, type Route } from "@/lib/resolve";
 import { postMetadata, termMetadata, simpleMetadata, JsonLd, postJsonLd, collectionJsonLd, ProductHeadExtras, PagingLinks } from "@/lib/seo";
 import { PageView, PostView, BlogArchive } from "@/components/views/content";
@@ -10,23 +10,49 @@ import { CartView, CheckoutView, OrderReceived, AccountView } from "@/components
 import { stripTags } from "@/lib/site";
 import { renderSearch } from "@/components/views/search";
 import { viewCart } from "@/lib/cart";
+import DynamicReload from "@/components/DynamicReload";
 
-export const dynamic = "force-dynamic";
+/**
+ * Shared renderer for the public site.
+ *  - "static": app/(site)/page.tsx and app/(site)/[...path] — ISR (revalidate 300 s, expired on every admin / MCP write);
+ *    no cookies / searchParams.
+ *  - "dynamic": app/(site)/dyn-render/[[...path]] — proxy.ts rewrites requests that need per-request rendering there
+ *    (query strings such as ?s= / ?orderby= / order-received ?key=, and the cart / checkout / my-account pages).
+ */
+export type Mode = "static" | "dynamic";
+export type SP = Record<string, string | string[] | undefined>;
 
-type Props = { params: Promise<{ path: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
+/** Route kinds that read cookies (cart, session, customer) and therefore never render statically. */
+export const DYNAMIC_KINDS = new Set(["cart", "checkout", "orderReceived", "account"]);
 
-async function route(props: Props) {
-  const [{ path }, ix] = await Promise.all([props.params, getIndex()]);
-  return { ix, r: resolve(ix, path) };
+async function front() {
+  const ix = await getIndex();
+  const reading = setting<{ page_on_front?: number }>(ix, "reading", {});
+  const page = ix.posts.find((p) => p.id === (reading.page_on_front || 396))!;
+  return { ix, page };
 }
 
-function productCount(ix: Awaited<ReturnType<typeof getIndex>>, termId: number) {
+function productCount(ix: SiteIndex, termId: number) {
   const ids = objectsInTerm(ix, termId);
   return visibleProducts(ix).filter((p) => ids.has(p.id)).length;
 }
 
-export async function generateMetadata(props: Props): Promise<Metadata> {
-  const { ix, r } = await route(props);
+export async function homeMetadata(sp: SP): Promise<Metadata> {
+  if (typeof sp.s === "string") return simpleMetadata(`${sp.s}`, "noindex, follow");
+  const { page } = await front();
+  return postMetadata(page);
+}
+
+export async function renderHome(sp: SP) {
+  if (typeof sp.s === "string") return renderSearch(sp.s, 1);
+  const { ix, page } = await front();
+  return <><JsonLd data={postJsonLd(page)} /><PageView ix={ix} page={page} isHome /></>;
+}
+
+export async function pathMetadata(path: string[], mode: Mode): Promise<Metadata> {
+  const ix = await getIndex();
+  const r = resolve(ix, path);
+  if (mode === "static" && DYNAMIC_KINDS.has(r.kind)) return { robots: "noindex, follow" };
   switch (r.kind) {
     case "page": case "post": case "product": return postMetadata(r.kind === "page" ? r.page : r.post);
     case "checkout": {
@@ -50,7 +76,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 }
 
-function ld(ix: Awaited<ReturnType<typeof getIndex>>, r: Route) {
+function ld(ix: SiteIndex, r: Route) {
   switch (r.kind) {
     case "page": case "cart": case "checkout": case "account": return <JsonLd data={postJsonLd(r.page)} />;
     case "post": return <JsonLd data={postJsonLd(r.post)} />;
@@ -62,11 +88,12 @@ function ld(ix: Awaited<ReturnType<typeof getIndex>>, r: Route) {
   }
 }
 
-export default async function CatchAll(props: Props) {
-  const { ix, r } = await route(props);
-  const sp = await props.searchParams;
-  const { path } = await props.params;
+export async function renderPath(path: string[], sp: SP, mode: Mode) {
+  const ix = await getIndex();
+  const r = resolve(ix, path);
   if (path.length === 2 && path[0] === "page" && /^\d+$/.test(path[1]) && typeof sp.s === "string") return renderSearch(sp.s, Number(path[1]));
+  // a cart / checkout / account URL that proxy.ts did not route to the dynamic renderer (e.g. right after a slug change)
+  if (mode === "static" && DYNAMIC_KINDS.has(r.kind)) return <DynamicReload />;
   switch (r.kind) {
     case "page": return <>{ld(ix, r)}<PageView ix={ix} page={r.page} /></>;
     case "post": return <>{ld(ix, r)}<PostView ix={ix} post={r.post} /></>;

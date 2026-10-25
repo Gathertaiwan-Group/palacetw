@@ -33,6 +33,11 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // the dynamic renderer is internal (reached only through the rewrite at the end of this function)
+  if (pathname === "/dyn-render" || pathname.startsWith("/dyn-render/")) {
+    return NextResponse.redirect(new URL((pathname.slice("/dyn-render".length) || "/") + req.nextUrl.search, req.url), 301);
+  }
+
   // No-JS add-to-cart (WooCommerce's non-AJAX path): the product page <form class="cart" method="post"> posting
   // add-to-cart=ID, or a ?add-to-cart=ID link, is handled by app/api/cart/form (writes cart_items, sets the cart cookie,
   // 303s back with a notice) — so a click before hydration still adds the product.
@@ -139,13 +144,40 @@ export async function proxy(req: NextRequest) {
   if (/^\/(wp-sitemap\.xml|(post_tag|product_tag)-sitemap\d*\.xml)$/.test(pathname)) {
     return NextResponse.redirect(new URL("/sitemap.xml", req.url), 301);
   }
-  // the one-shot add-to-cart notice is rendered by this request (it still carries the cookie); drop it from the browser
-  if (req.method === "GET" && req.cookies.has("pt_notice") && !req.headers.has("next-router-prefetch")) {
-    const res = NextResponse.next();
-    res.cookies.set("pt_notice", "", { path: "/", maxAge: 0 });
-    return res;
+  // Public pages are ISR (app/(site)/page.tsx, app/(site)/[...path]). Requests that need per-request rendering go to
+  // the dynamic renderer app/(site)/dyn-render: a meaningful query string, or the cart / checkout / my-account pages.
+  if (needsDynamic(pathname, searchParams)) {
+    const u = req.nextUrl.clone();
+    u.pathname = "/dyn-render" + (pathname === "/" ? "/" : pathname);
+    return NextResponse.rewrite(u);
   }
   return NextResponse.next();
+}
+
+/** Query parameters that don't change the page (tracking, Next.js RSC cache-busting) — those requests stay static. */
+const STATIC_PARAMS = /^(utm_\w+|fbclid|gclid|gbraid|wbraid|dclid|msclkid|yclid|twclid|ttclid|li_fat_id|mc_cid|mc_eid|_ga|_gl|_rsc|srsltid)$/;
+
+/** Cart (6, 1036), checkout (7, 1037) and my-account (8, 10) pages — see CART_PAGES etc. in lib/resolve.ts. */
+const DYN_PAGE_IDS = "6,7,8,10,1036,1037";
+let dynSlugs = new Set(["cart", "cart-2", "checkout", "checkout-2", "my-account", "my-account-2"]);
+let dynCheckedAt = 0;
+function refreshDynSlugs() {
+  if (Date.now() - dynCheckedAt < 300_000) return;
+  dynCheckedAt = Date.now();
+  rest(`posts?select=slug,path&status=eq.publish&id=in.(${DYN_PAGE_IDS})`)
+    .then((rows) => {
+      const s = rows.map((r) => String(r.path || `/${r.slug}/`).split("/").filter(Boolean)[0]).filter(Boolean);
+      if (s.length) dynSlugs = new Set(s.map((x) => { try { return decodeURIComponent(x); } catch { return x; } }));
+    })
+    .catch(() => {});
+}
+
+function needsDynamic(pathname: string, sp: URLSearchParams) {
+  for (const k of sp.keys()) if (!STATIC_PARAMS.test(k)) return true;
+  refreshDynSlugs();
+  let first = pathname.split("/").filter(Boolean)[0] || "";
+  try { first = decodeURIComponent(first); } catch { /* raw */ }
+  return dynSlugs.has(first);
 }
 
 export const config = {

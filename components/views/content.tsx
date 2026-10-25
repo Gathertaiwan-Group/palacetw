@@ -4,6 +4,7 @@ import Shell, { BASE_BODY, TAIL_BODY, LAYOUT, PageHeader, ContentWrap, EmptySide
 import { type Post, type SiteIndex, getContent, termsOf, termLink, link, mediaById, blogPosts, productOf, getApprovedComments } from "@/lib/data";
 import { wpDate, wpExcerpt, stripTags } from "@/lib/site";
 import { Pagination } from "../woo";
+import { imgProps, responsiveHtml, SIZES } from "@/lib/img";
 import CommentForm from "../CommentForm";
 
 export const PAGE_LAYOUT: Record<number, string> = {
@@ -31,7 +32,7 @@ export async function PageView({ ix, page, isHome = false }: { ix: SiteIndex; pa
     <Shell isHome={isHome} bodyClass={(isHome ? "home " : "") + pageBody(page, content)} header={<PageHeader title={page.title} crumbs={isHome ? undefined : [{ label: page.title }]} />}>
       <ContentWrap sidebars={<Sidebars layout={layout} />}>
         <article className="single-page-article clr">
-          <div className="entry clr" itemProp="text" dangerouslySetInnerHTML={{ __html: content }} />
+          <div className="entry clr" itemProp="text" dangerouslySetInnerHTML={{ __html: responsiveHtml(ix, content) }} />
         </article>
       </ContentWrap>
     </Shell>
@@ -83,10 +84,10 @@ export async function PostView({ ix, post }: { ix: SiteIndex; post: Post }) {
     <Shell bodyClass={body} header={<PageHeader title="Blog" crumbs={[...postParentCrumbs(post), { label: post.title }]} />}>
       <ContentWrap sidebars={<EmptySidebar side="right" />}>
         <article id={`post-${post.id}`}>
-          {img ? <div className="thumbnail"><img src={img.public_url} alt={post.title} width={img.width || undefined} height={img.height || undefined} className="attachment-full size-full wp-post-image" /></div> : null}
+          {img ? <div className="thumbnail"><img {...imgProps(img, SIZES.full, { priority: true })} alt={post.title} className="attachment-full size-full wp-post-image" /></div> : null}
           <header className="entry-header clr"><h2 className="single-post-title entry-title" itemProp="headline">{post.title}</h2></header>
           <Meta ix={ix} post={post} variant="single" />
-          <div className="entry-content clr" itemProp="text" dangerouslySetInnerHTML={{ __html: content }} />
+          <div className="entry-content clr" itemProp="text" dangerouslySetInnerHTML={{ __html: responsiveHtml(ix, content) }} />
           <div className="post-tags clr">
             {tags.length ? <><span className="owp-tag-text">Tags: </span>{tags.map((t, k) => <Fragment key={t.id}>{k ? <span className="owp-sep">,</span> : null} <Link href={termLink(t)} rel="tag">{t.name}</Link></Fragment>)}</> : null}
           </div>
@@ -152,7 +153,7 @@ export function BlogArchive({ ix, posts, title, crumbs, base, page, bodyClass, e
                 return (
                   <article key={p.id} id={`post-${p.id}`} className={`blog-entry clr col span_1_of_2 col-${k + 1} ${img ? "" : "no-featured-image "}grid-entry ${postClasses(ix, p)}`}>
                     <div className="blog-entry-inner clr">
-                      {img ? <div className="thumbnail"><Link href={link(p)} className="thumbnail-link"><img src={img.public_url} alt={p.title} className="attachment-full size-full wp-post-image" /></Link></div> : null}
+                      {img ? <div className="thumbnail"><Link href={link(p)} className="thumbnail-link"><img {...imgProps(img, SIZES.blogCard)} alt={p.title} className="attachment-full size-full wp-post-image" /></Link></div> : null}
                       <header className="blog-entry-header clr"><h2 className="blog-entry-title entry-title"><Link href={link(p)} rel="bookmark">{p.title}</Link></h2></header>
                       <Meta ix={ix} post={p} variant="entry" />
                       <div className="blog-entry-summary clr" itemProp="text"><p>{wpExcerpt(ex, 30)} </p></div>
@@ -194,7 +195,7 @@ export function SearchView({ ix, q, results, page }: { ix: SiteIndex; q: string;
                 return (
                   <article key={p.id} id={`post-${p.id}`} className={`post-${p.id} ${p.post_type} type-${p.post_type} status-publish entry ${img ? "has-media" : ""}`}>
                     <div className="search-entry-inner clr">
-                      {img ? <div className="thumbnail"><Link href={link(p)} className="thumbnail-link"><img width={150} height={150} src={img.public_url} alt={p.title} className="attachment-thumbnail size-thumbnail wp-post-image" /></Link></div> : null}
+                      {img ? <div className="thumbnail"><Link href={link(p)} className="thumbnail-link"><img {...imgProps(img, "150px")} width={150} height={150} alt={p.title} className="attachment-thumbnail size-thumbnail wp-post-image" /></Link></div> : null}
                       <div className="search-entry-content clr">
                         <header className="search-entry-header clr"><h2 className="search-entry-title entry-title"><Link href={link(p)} rel="bookmark">{p.title}</Link></h2></header>
                         <div className="search-entry-summary clr" itemProp="text" dangerouslySetInnerHTML={{ __html: `<p>${summary || ""}</p>` }} />

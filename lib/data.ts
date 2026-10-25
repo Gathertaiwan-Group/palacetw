@@ -15,7 +15,7 @@ export type Post = {
   modified_at: string | null; seo: Record<string, any>; meta: Record<string, any>;
 };
 export type Term = { id: number; taxonomy: string; name: string; slug: string; description: string; parent_id: number | null; count: number; old_url: string | null; meta: Record<string, any> };
-export type Media = { id: number; title: string; alt_text: string; caption: string; public_url: string; width: number | null; height: number | null; mime_type: string };
+export type Media = { id: number; title: string; alt_text: string; caption: string; public_url: string; width: number | null; height: number | null; mime_type: string; variants?: { w: number; h: number; url: string }[] };
 export type Product = {
   post_id: number; product_type: string; sku: string | null; regular_price: number | null; sale_price: number | null; price: number | null;
   sale_from: string | null; sale_to: string | null; manage_stock: boolean; stock_quantity: number | null; stock_status: string; backorders: string;
@@ -55,13 +55,13 @@ async function all<T>(table: string, select = "*", order?: string): Promise<T[]>
 const POST_COLS = "id,post_type,status,slug,path,title,excerpt,author_id,parent_id,menu_order,template,sticky,comment_status,featured_media_id,published_at,date_local,modified_at,seo,meta";
 
 async function loadIndex(): Promise<SiteIndex> {
-  // scheduled posts (status=future) go live once due; the index is rebuilt at most every 60s
+  // scheduled posts (status=future) go live once due; the index is rebuilt at most every 300s (and on every admin / MCP write)
   await publishDue().catch(() => 0);
   const [posts, terms, rels, media, products, variations, attrValues, attributes, qtyRules, settingsRows, menuItems, authors, comments] = await Promise.all([
     all<Post>("posts", POST_COLS, "id"),
     all<Term>("terms", "id,taxonomy,name,slug,description,parent_id,count,old_url,meta", "id"),
     all<{ object_id: number; term_id: number }>("term_relationships", "object_id,term_id"),
-    all<Media>("media", "id,title,alt_text,caption,public_url,width,height,mime_type", "id"),
+    all<Media>("media", "id,title,alt_text,caption,public_url,width,height,mime_type,variants", "id"),
     all<Product>("products", "*", "post_id"),
     all<Variation>("product_variations", "id,product_id,menu_order,sku,attributes,description,regular_price,sale_price,price,manage_stock,stock_quantity,stock_status,image_id", "menu_order"),
     all<AttrValue>("product_attribute_values", "*", "position"),
@@ -78,7 +78,7 @@ async function loadIndex(): Promise<SiteIndex> {
   return { posts, terms, rels, media, products, variations, attrValues, attributes, qtyRules, settings, menuItems, authors, commentCounts };
 }
 
-export const getIndex = unstable_cache(loadIndex, ["site-index-v1"], { revalidate: 60, tags: ["site"] });
+export const getIndex = unstable_cache(loadIndex, ["site-index-v2"], { revalidate: 300, tags: ["site"] });
 
 export const getContent = unstable_cache(
   async (id: number) => {
@@ -86,7 +86,7 @@ export const getContent = unstable_cache(
     return (data?.content as string) || "";
   },
   ["post-content-v1"],
-  { revalidate: 60, tags: ["site"] },
+  { revalidate: 300, tags: ["site"] },
 );
 
 export const getApprovedComments = unstable_cache(
@@ -95,7 +95,7 @@ export const getApprovedComments = unstable_cache(
     return data || [];
   },
   ["post-comments-v1"],
-  { revalidate: 60, tags: ["site"] },
+  { revalidate: 300, tags: ["site"] },
 );
 
 /* ---------- helpers over the index ---------- */

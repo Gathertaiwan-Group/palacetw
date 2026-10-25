@@ -1,5 +1,5 @@
 import "server-only";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { admin } from "@/lib/supabase";
 
 /** Who performs a write. Every write in the admin / MCP service layer is recorded in site_palacetw.audit_log. */
@@ -34,10 +34,14 @@ export async function audit(actor: Actor, action: string, entityType: string | n
   if (error) console.error("[audit]", error.message);
 }
 
-/** Front-end data is cached under the "site" tag (lib/data.ts); expire it after any content write. */
+/**
+ * Front-end data is cached under the "site" tag (lib/data.ts) and the public pages are ISR; expire both after any
+ * content write so the change is live on the next request.
+ */
 export function refreshSite() {
   try {
     revalidateTag("site", { expire: 0 });
+    revalidatePath("/", "layout");
   } catch {
     /* outside a request scope (scripts) */
   }

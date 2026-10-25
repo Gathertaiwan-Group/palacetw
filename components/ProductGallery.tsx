@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type Img = { src: string; alt: string; w: number | null; h: number | null; title: string };
+type Img = { src: string; srcSet?: string; thumb?: string; alt: string; w: number | null; h: number | null; title: string };
+
+const MAIN_SIZES = "(max-width: 768px) 100vw, 600px";
 
 /** WooCommerce product gallery: flexslider (thumbnails), hover zoom and PhotoSwipe-style lightbox. */
 export default function ProductGallery({ images }: { images: Img[] }) {
@@ -26,7 +28,7 @@ export default function ProductGallery({ images }: { images: Img[] }) {
         onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setZoom({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, bw: r.width, bh: r.height }); }}
         onMouseLeave={() => setZoom(null)}>
         <a href={cur.src} onClick={(e) => { e.preventDefault(); setLb(idx); }}>
-          <img width={cur.w || 504} height={cur.h || 504} src={cur.src} className="wp-post-image" alt={cur.alt} title={cur.title} decoding="async" fetchPriority="high" />
+          <img width={cur.w || 504} height={cur.h || 504} src={cur.src} srcSet={cur.srcSet} sizes={cur.srcSet ? MAIN_SIZES : undefined} className="wp-post-image" alt={cur.alt} title={cur.title} decoding="async" fetchPriority={idx === 0 ? "high" : undefined} />
         </a>
         {zoom && (cur.w || 0) > zoom.bw ? (
           <img role="presentation" alt="" src={cur.src} className="zoomImg" style={{ position: "absolute", top: -zoom.y * ((cur.h || 0) - zoom.bh), left: -zoom.x * ((cur.w || 0) - zoom.bw), opacity: 1, width: cur.w || undefined, height: cur.h || undefined, border: "none", maxWidth: "none", maxHeight: "none", pointerEvents: "none" }} />
@@ -46,7 +48,7 @@ export default function ProductGallery({ images }: { images: Img[] }) {
       {images.length > 1 ? (
         <ol className="flex-control-nav flex-control-thumbs">
           {images.map((im, i) => (
-            <li key={i}><img src={im.src} alt={im.alt} width={100} height={100} className={i === idx ? "flex-active" : ""} onClick={() => setIdx(i)} draggable={false} /></li>
+            <li key={i}><img src={im.thumb || im.src} alt={im.alt} width={100} height={100} loading="lazy" decoding="async" className={i === idx ? "flex-active" : ""} onClick={() => setIdx(i)} draggable={false} /></li>
           ))}
         </ol>
       ) : null}

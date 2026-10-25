@@ -1,18 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { headers } from "next/headers";
-import "./globals.css";
+import "../globals.css";
 import { getIndex, setting } from "@/lib/data";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 import PixelPageView from "@/components/PixelPageView";
 import ChatButton from "@/components/ChatButton";
 
-async function isAdminArea() {
-  return (await headers()).get("x-admin-area") === "1";
-}
-
 export async function generateMetadata(): Promise<Metadata> {
-  if (await isAdminArea()) return { title: { default: `後台 - ${SITE_NAME}`, template: `%s - ${SITE_NAME} 後台` }, robots: { index: false, follow: false } };
   const ix = await getIndex();
   const icon = setting<{ url?: string }>(ix, "site_icon", {}).url;
   const tracking = setting<Record<string, string | null>>(ix, "tracking", {});
@@ -30,9 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
+/** Root layout of the public site (the admin has its own root layout in app/admin). No request APIs here: pages are ISR. */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // /admin renders without the WordPress theme, chat button and tracking pixels
-  if (await isAdminArea()) return <html lang="zh-TW"><body className="adm-body">{children}</body></html>;
   const ix = await getIndex();
   const tracking = setting<Record<string, string | null>>(ix, "tracking", {});
   const pixel = tracking.facebook_pixel_id;

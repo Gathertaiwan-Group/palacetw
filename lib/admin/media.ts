@@ -52,6 +52,32 @@ function guessMime(filename: string, given?: string) {
   return map[ext] || "application/octet-stream";
 }
 
+/** Responsive WebP widths (same as scripts/media-variants.mjs); only widths smaller than the stored image are made. */
+const VARIANT_WIDTHS = [480, 960, 1440];
+const variantPath = (storagePath: string, w: number) => `v/${w}/${storagePath.replace(/\.[^./]+$/, "")}.webp`;
+
+/** Makes and uploads the 480 / 960 / 1440 WebP variants (quality 75, immutable cache) for a raster image. */
+export async function makeVariants(source: Buffer, storagePath: string, storedWidth: number | null) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key || !storedWidth) return [];
+  const out: { w: number; h: number; path: string; url: string; bytes: number }[] = [];
+  for (const w of VARIANT_WIDTHS) {
+    if (w >= storedWidth) continue;
+    const { data, info } = await sharp(source, { failOn: "none" }).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 75 }).toBuffer({ resolveWithObject: true });
+    const path = variantPath(storagePath, w);
+    const enc = path.split("/").map(encodeURIComponent).join("/");
+    const r = await fetch(`${base}/storage/v1/object/${BUCKET}/${enc}`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "image/webp", "cache-control": "public, max-age=31536000, immutable", "x-upsert": "true" },
+      body: new Uint8Array(data),
+    });
+    if (!r.ok) throw new AdminError(`上傳縮放版本失敗：${r.status}`, 500);
+    out.push({ w: info.width, h: info.height, path, url: sb().storage.from(BUCKET).getPublicUrl(path).data.publicUrl, bytes: data.length });
+  }
+  return out;
+}
+
 /** Upload: raster images are converted to WebP (longest side 2000, quality 80); GIF / SVG / video / PDF stay as-is. */
 export async function uploadMedia(actor: Actor, file: { bytes: Buffer; filename: string; mime?: string }, meta: { title?: string; alt_text?: string; caption?: string; parent_post_id?: number | null } = {}) {
   if (!file.bytes?.length) throw new AdminError("檔案是空的");
@@ -85,7 +111,9 @@ export async function uploadMedia(actor: Actor, file: { bytes: Buffer; filename:
   const up = await sb().storage.from(BUCKET).upload(path, out, { contentType: outMime, upsert: false, cacheControl: "31536000" });
   if (up.error) throw new AdminError(`上傳失敗：${up.error.message}`, 500);
   const public_url = sb().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  const variants = outMime === "image/webp" ? await makeVariants(file.bytes, path, width) : [];
   const row = must(await sb().from("media").insert({
+    variants,
     slug: base, title: meta.title ?? file.filename.replace(/\.[^.]+$/, ""), alt_text: meta.alt_text ?? "", caption: meta.caption ?? "",
     mime_type: outMime, original_mime: mime, width, height, filesize: out.length, original_filesize: file.bytes.length,
     storage_path: path, public_url, parent_post_id: meta.parent_post_id ?? null, in_library: true, uploaded_at: now.toISOString(),
@@ -108,7 +136,8 @@ export async function updateMedia(actor: Actor, id: number, input: { title?: str
 export async function deleteMedia(actor: Actor, id: number) {
   const before = await getMedia(id);
   const { data: users } = await sb().from("posts").select("id").eq("featured_media_id", id).limit(5);
-  const rm = await sb().storage.from(BUCKET).remove([before.storage_path]);
+  const variantPaths = (Array.isArray(before.variants) ? before.variants : []).map((v: { path?: string }) => v.path).filter(Boolean) as string[];
+  const rm = await sb().storage.from(BUCKET).remove([before.storage_path, ...variantPaths]);
   if (rm.error) throw new AdminError(`刪除檔案失敗：${rm.error.message}`, 500);
   must(await sb().from("media").delete().eq("id", id));
   await audit(actor, "media.delete", "media", id, { storage_path: before.storage_path, public_url: before.public_url, featured_on: (users || []).map((u: any) => u.id) }, null);

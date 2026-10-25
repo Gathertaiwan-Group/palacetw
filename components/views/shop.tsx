@@ -6,6 +6,7 @@ import { ProductList, ShopToolbar, Pagination, PriceHtml, productClasses } from 
 import ProductGallery from "../ProductGallery";
 import AddToCartForm from "../AddToCartForm";
 import FlashNotice from "../FlashNotice";
+import { imgProps, responsiveHtml, srcSetOf, variantUrl, SIZES } from "@/lib/img";
 
 const SHOP_BODY = "woocommerce woocommerce-page";
 
@@ -49,7 +50,7 @@ export function ShopArchive({ ix, term, page, sp, base }: { ix: SiteIndex; term:
       <ContentWrap contentClass="clr site-content" sidebars={isShop ? null : <EmptySidebar side="right" />}>
         <article className="entry-content entry clr">
           <header className="woocommerce-products-header">
-            {term?.description ? <div className="term-description" dangerouslySetInnerHTML={{ __html: term.description }} /> : null}
+            {term?.description ? <div className="term-description" dangerouslySetInnerHTML={{ __html: responsiveHtml(ix, term.description) }} /> : null}
           </header>
           {slice.length ? (
             <>
@@ -72,7 +73,7 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
   const prod = productOf(ix, post.id)!;
   const content = await getContent(post.id);
   const imgIds = [post.featured_media_id, ...(prod.gallery_image_ids || [])].filter(Boolean) as number[];
-  const images = imgIds.map((id) => mediaById(ix, id)).filter(Boolean).map((m) => ({ src: m!.public_url, alt: m!.alt_text || "", w: m!.width, h: m!.height, title: m!.title }));
+  const images = imgIds.map((id) => mediaById(ix, id)).filter(Boolean).map((m) => ({ src: m!.public_url, srcSet: srcSetOf(m!), thumb: variantUrl(m!, 100) || m!.public_url, alt: m!.alt_text || "", w: m!.width, h: m!.height, title: m!.title }));
   const cats = termsOf(ix, post.id, "product_cat");
   const tags = termsOf(ix, post.id, "product_tag");
   const { prev, next } = adjacentProducts(ix, post);
@@ -126,14 +127,14 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
                   <li className="prev-li">
                     <Link href={link(prev)} className="owp-nav-link prev" rel="next"><i className=" fa fa-angle-left" aria-hidden="true" role="img" /></Link>
                     <Link href={link(prev)} className="owp-nav-text prev-text">Previous Product</Link>
-                    <div className="owp-nav-thumb"><Link title={prev.title} href={link(prev)}>{thumb(prev) ? <img width={100} height={100} src={thumb(prev)!.public_url} className="attachment-shop_thumbnail size-shop_thumbnail wp-post-image" alt="" /> : null}</Link></div>
+                    <div className="owp-nav-thumb"><Link title={prev.title} href={link(prev)}>{thumb(prev) ? <img {...imgProps(thumb(prev)!, SIZES.thumb)} width={100} height={100} className="attachment-shop_thumbnail size-shop_thumbnail wp-post-image" alt="" /> : null}</Link></div>
                   </li>
                 ) : null}
                 {next ? (
                   <li className="next-li">
                     <Link href={link(next)} className="owp-nav-text next-text">Next Product</Link>
                     <Link href={link(next)} className="owp-nav-link next" rel="next"><i className=" fa fa-angle-right" aria-hidden="true" role="img" /></Link>
-                    <div className="owp-nav-thumb"><Link title={next.title} href={link(next)}>{thumb(next) ? <img width={100} height={100} src={thumb(next)!.public_url} className="attachment-shop_thumbnail size-shop_thumbnail wp-post-image" alt="" /> : null}</Link></div>
+                    <div className="owp-nav-thumb"><Link title={next.title} href={link(next)}>{thumb(next) ? <img {...imgProps(thumb(next)!, SIZES.thumb)} width={100} height={100} className="attachment-shop_thumbnail size-shop_thumbnail wp-post-image" alt="" /> : null}</Link></div>
                   </li>
                 ) : null}
               </ul>
@@ -143,7 +144,7 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
             <div className="summary entry-summary">
               <h2 className="single-post-title product_title entry-title" itemProp="name">{post.title}</h2>
               <p className="price"><PriceHtml ix={ix} id={post.id} /></p>
-              <div className="woocommerce-product-details__short-description" dangerouslySetInnerHTML={{ __html: prod.short_description }} />
+              <div className="woocommerce-product-details__short-description" dangerouslySetInnerHTML={{ __html: responsiveHtml(ix, prod.short_description) }} />
               <AddToCartForm productId={post.id} title={post.title} type={prod.product_type} purchasable={isPurchasable(prod)} stockStatus={prod.stock_status} stockQty={prod.stock_quantity} manageStock={prod.manage_stock}
                 soldIndividually={prod.sold_individually} minQty={prod.min_qty} maxQty={prod.max_qty} step={prod.qty_step} basePrice={pi.price} attributes={attrs} variations={variations} rules={rules} />
               <div className="product_meta">
@@ -160,7 +161,7 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
               </ul>
               <div className="woocommerce-Tabs-panel woocommerce-Tabs-panel--description panel entry-content wc-tab" id="tab-description" role="tabpanel" aria-labelledby="tab-title-description">
                 <h2>Description</h2>
-                <div dangerouslySetInnerHTML={{ __html: content }} />
+                <div dangerouslySetInnerHTML={{ __html: responsiveHtml(ix, content) }} />
               </div>
               {attrsVisible.length ? (
                 <div className="woocommerce-Tabs-panel woocommerce-Tabs-panel--additional_information panel entry-content wc-tab" id="tab-additional_information" role="tabpanel" style={{ display: "none" }}>

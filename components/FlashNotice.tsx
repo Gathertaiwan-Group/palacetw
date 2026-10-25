@@ -1,9 +1,25 @@
+"use client";
 import Link from "next/link";
-import { readNotice } from "@/lib/cart";
+import { useEffect, useState } from "react";
 
-/** WooCommerce notices wrapper; shows the one-shot notice left by a no-JS add-to-cart (app/api/cart/form). */
-export default async function FlashNotice() {
-  const n = await readNotice();
+const NOTICE_COOKIE = "pt_notice";
+
+/**
+ * WooCommerce notices wrapper; shows the one-shot notice left by a no-JS add-to-cart (app/api/cart/form).
+ * Read on the client so the product / shop pages stay statically cached; the cookie is removed once shown.
+ */
+export default function FlashNotice() {
+  const [n, setN] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    const raw = document.cookie.split("; ").find((c) => c.startsWith(NOTICE_COOKIE + "="))?.slice(NOTICE_COOKIE.length + 1);
+    if (!raw) return;
+    document.cookie = `${NOTICE_COOKIE}=; path=/; max-age=0`;
+    try {
+      const v = JSON.parse(decodeURIComponent(raw));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (typeof v?.text === "string") setN({ ok: !!v.ok, text: v.text });
+    } catch { /* ignore */ }
+  }, []);
   return (
     <div className="woocommerce-notices-wrapper">
       {n ? (
@@ -14,4 +30,3 @@ export default async function FlashNotice() {
     </div>
   );
 }
-

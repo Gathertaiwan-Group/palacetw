@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { admin } from "./supabase";
+import { variantUrl } from "./img";
 import {
   getIndex, priceInfo, productOf, isPurchasable, qtyRulesFor, applyQtyDiscount, mediaById, link, type SiteIndex,
 } from "./data";
@@ -53,7 +54,7 @@ function lineFor(ix: SiteIndex, row: any): CartLine | null {
   const stockMax = (variation || prod).manage_stock ? (variation || prod).stock_quantity : null;
   return {
     item_id: row.id, product_id: row.product_id, variation_id: row.variation_id, name: post.title, link: link(post),
-    image: img?.public_url || null, sku: variation?.sku || prod.sku, variation: row.variation || {}, quantity: row.quantity,
+    image: variantUrl(img, 200), sku: variation?.sku || prod.sku, variation: row.variation || {}, quantity: row.quantity,
     regular_unit: base, unit, line_total: Math.round(unit * row.quantity * 100) / 100, discount_rule: rule?.name || null,
     max_qty: prod.sold_individually ? 1 : stockMax ?? prod.max_qty,
   };
@@ -158,10 +159,5 @@ export async function addToCart(input: { productId: number; quantity?: unknown; 
   return { ok: true, message: `“${post.title}” has been added to your cart.`, cart: await viewCart(cart), link: href };
 }
 
-/** One-shot notice shown after a no-JS add-to-cart redirect (read by the product / shop pages, cleared by proxy.ts). */
+/** One-shot notice shown after a no-JS add-to-cart redirect (read and cleared client-side by components/FlashNotice). */
 export const NOTICE_COOKIE = "pt_notice";
-export async function readNotice(): Promise<{ ok: boolean; text: string } | null> {
-  const raw = (await cookies()).get(NOTICE_COOKIE)?.value;
-  if (!raw) return null;
-  try { const v = JSON.parse(decodeURIComponent(raw)); return typeof v?.text === "string" ? { ok: !!v.ok, text: v.text } : null; } catch { return null; }
-}

@@ -94,6 +94,7 @@ for (const [label, src] of parts) {
   css = css.replace(/(^|[^\w-])body\.(?=[A-Za-z_-])/g, "$1.wpb.");
   out += `\n/* ---- ${label} ---- */\n${css}\n`;
 }
+out = responsiveBackgrounds(out);
 fs.mkdirSync(path.join(OUT, "fonts"), { recursive: true });
 fs.writeFileSync(path.join(OUT, "theme.css"), out);
 let copied = 0;
@@ -104,3 +105,22 @@ for (const f of usedFonts) {
   else console.warn("font not found", f);
 }
 console.log(`theme.css ${(out.length / 1024).toFixed(0)}KB, fonts copied ${copied}`);
+
+/**
+ * Large Elementor section backgrounds → responsive WebP variants (bucket v/<w>/…, see scripts/media-variants.mjs):
+ * 1440 px by default, 960 px on phones, the stored 2000 px image only on screens wider than 1440 px.
+ * Only images listed here are known to have a 1440 variant (stored width > 1440).
+ */
+function responsiveBackgrounds(css) {
+  const BIG = ["uploads/2021/04/01home-scaled.webp"];
+  let extra = "";
+  for (const file of BIG) {
+    const re = new RegExp(`([^{}]+)\\{([^{}]*?)background-image:url\\("([^"]*/site-palacetw/)${file.replace(/[.]/g, "\\.")}"\\)`, "g");
+    css = css.replace(re, (m, sel, pre, base) => {
+      const v = (w) => `${base}v/${w}/${file}`;
+      extra += `@media (max-width:767px){${sel}{background-image:url("${v(960)}");}}@media (min-width:1441px){${sel}{background-image:url("${base}${file}");}}`;
+      return `${sel}{${pre}background-image:url("${v(1440)}")`;
+    });
+  }
+  return extra ? `${css}\n/* ---- responsive backgrounds ---- */\n${extra}\n` : css;
+}
