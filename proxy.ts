@@ -33,6 +33,30 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // No-JS add-to-cart (WooCommerce's non-AJAX path): the product page <form class="cart" method="post"> posting
+  // add-to-cart=ID, or a ?add-to-cart=ID link, is handled by app/api/cart/form (writes cart_items, sets the cart cookie,
+  // 303s back with a notice) — so a click before hydration still adds the product.
+  if (!pathname.startsWith("/admin") && (req.method === "GET" || req.method === "POST")) {
+    let atc = searchParams.get("add-to-cart");
+    const ct = req.headers.get("content-type") || "";
+    if (req.method === "POST" && !req.headers.has("next-action") && (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data"))) {
+      const fd = await req.clone().formData().catch(() => null);
+      const v = fd?.get("add-to-cart");
+      if (typeof v === "string" && v) atc = v;
+    }
+    if (atc && /^\d+$/.test(atc)) {
+      const u = new URL("/api/cart/form/", req.url);
+      const back = new URLSearchParams(searchParams);
+      if (req.method === "GET") {
+        searchParams.forEach((v, k) => u.searchParams.set(k, v));
+        back.delete("add-to-cart"); back.delete("quantity");
+      }
+      const qs = back.toString();
+      u.searchParams.set("return", pathname + (qs ? "?" + qs : ""));
+      return NextResponse.rewrite(u);
+    }
+  }
+
   // /admin: mark the request (root layout skips the WordPress theme) and refresh the Supabase Auth session cookies.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const next = () => {
@@ -81,6 +105,13 @@ export async function proxy(req: NextRequest) {
     return NextResponse.rewrite(u);
   }
 
+  // renamed author slugs (e.g. the old e-mail-address slug): 301 the archive and everything under it (/page/N/, /feed/)
+  const au = pathname.match(/^\/author\/([^/]+)\/(.*)$/);
+  if (au && au[1] !== "admin") {
+    const hit = await redirectFor(`/author/${au[1]}/`);
+    if (hit?.target) return NextResponse.redirect(new URL(hit.target + au[2] + req.nextUrl.search, req.url), hit.status_code || 301);
+  }
+
   const att = searchParams.get("attachment_id");
   if (att && /^\d+$/.test(att)) {
     const hit = await redirectFor(`/?attachment_id=${att}`);
@@ -107,6 +138,12 @@ export async function proxy(req: NextRequest) {
 
   if (/^\/(wp-sitemap\.xml|(post_tag|product_tag)-sitemap\d*\.xml)$/.test(pathname)) {
     return NextResponse.redirect(new URL("/sitemap.xml", req.url), 301);
+  }
+  // the one-shot add-to-cart notice is rendered by this request (it still carries the cookie); drop it from the browser
+  if (req.method === "GET" && req.cookies.has("pt_notice") && !req.headers.has("next-router-prefetch")) {
+    const res = NextResponse.next();
+    res.cookies.set("pt_notice", "", { path: "/", maxAge: 0 });
+    return res;
   }
   return NextResponse.next();
 }

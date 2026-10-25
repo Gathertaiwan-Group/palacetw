@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { admin } from "@/lib/supabase";
-import { getCartRow, viewCart } from "@/lib/cart";
-import { getIndex, isPurchasable, priceInfo, productOf } from "@/lib/data";
+import { addToCart, getCartRow, viewCart } from "@/lib/cart";
 
 export const dynamic = "force-dynamic";
 
@@ -12,40 +11,9 @@ export async function GET() {
 /** Add to cart: { product_id, quantity, variation_id?, variation? } */
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const productId = Number(body.product_id);
-  const qty = Math.max(1, Math.floor(Number(body.quantity) || 1));
-  const ix = await getIndex();
-  const post = ix.posts.find((p) => p.id === productId && p.post_type === "product" && p.status === "publish");
-  const prod = productOf(ix, productId);
-  if (!post || !prod) return NextResponse.json({ error: "Product not found." }, { status: 404 });
-
-  let variationId: number | null = null;
-  let variationAttrs: Record<string, string> = {};
-  if (prod.product_type === "variable") {
-    const v = ix.variations.find((x) => x.id === Number(body.variation_id) && x.product_id === productId);
-    if (!v) return NextResponse.json({ error: "Please choose product options&hellip;" }, { status: 400 });
-    if (!priceInfo(v).has || v.stock_status === "outofstock") return NextResponse.json({ error: "Sorry, this product is unavailable." }, { status: 400 });
-    variationId = v.id;
-    variationAttrs = { ...(v.attributes || {}), ...(body.variation || {}) };
-  } else if (!isPurchasable(prod)) {
-    return NextResponse.json({ error: "Sorry, this product cannot be purchased." }, { status: 400 });
-  }
-  const unit = variationId ? ix.variations.find((x) => x.id === variationId)! : prod;
-  if (unit.manage_stock && unit.stock_quantity != null && qty > unit.stock_quantity && prod.backorders === "no")
-    return NextResponse.json({ error: `You cannot add that amount to the cart — we have ${unit.stock_quantity} in stock.` }, { status: 400 });
-
-  const cart = await getCartRow(true);
-  const sb = admin();
-  const { data: existing } = await sb.from("cart_items").select("*").eq("cart_id", cart.id).eq("product_id", productId)
-    .filter("variation_id", variationId ? "eq" : "is", variationId ?? null).maybeSingle();
-  if (existing) {
-    const newQty = prod.sold_individually ? 1 : existing.quantity + qty;
-    await sb.from("cart_items").update({ quantity: newQty }).eq("id", existing.id);
-  } else {
-    await sb.from("cart_items").insert({ cart_id: cart.id, product_id: productId, variation_id: variationId, quantity: prod.sold_individually ? 1 : qty, variation: variationAttrs });
-  }
-  await sb.from("carts").update({ expires_at: new Date(Date.now() + 48 * 3600e3).toISOString() }).eq("id", cart.id);
-  return NextResponse.json({ ok: true, message: `“${post.title}” has been added to your cart.`, cart: await viewCart(cart) });
+  const r = await addToCart({ productId: Number(body.product_id), quantity: body.quantity, variationId: body.variation_id, variation: body.variation });
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
+  return NextResponse.json({ ok: true, message: r.message, cart: r.cart });
 }
 
 /** Update quantities: { items: [{ item_id, quantity }] } or apply/remove coupon: { coupon, remove_coupon } */

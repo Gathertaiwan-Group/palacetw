@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import RichEditor from "./RichEditor";
 import { MediaField } from "./MediaPicker";
 import { Badge, toLocalInput } from "./ui";
+import SubmitButton from "./SubmitButton";
 import { savePostAction, trashPostAction } from "@/app/admin/actions";
 
 type Term = { id: number; name: string; parent_id: number | null };
@@ -70,15 +71,15 @@ export default function PostEditor({
               <option value="private">私密</option>
             </select>
             <div className="actions">
-              {!isPublished ? <button className="btn" name="intent" value="draft">儲存草稿</button> : <button className="btn" name="intent" value="draft">轉為草稿</button>}
-              {post ? <button className="btn" name="intent" value="preview" >儲存並預覽</button> : null}
+              {!isPublished ? <SubmitButton className="btn" name="intent" value="draft">儲存草稿</SubmitButton> : <SubmitButton className="btn" name="intent" value="draft">轉為草稿</SubmitButton>}
+              {post ? <SubmitButton className="btn" name="intent" value="preview">儲存並預覽</SubmitButton> : null}
             </div>
             <div className="actions">
-              {isPublished ? <button className="btn btn-p" name="intent" value="update">更新</button> : <button className="btn btn-p" name="intent" value="publish">發布</button>}
-              <button className="btn" name="intent" value="schedule">排程</button>
+              {isPublished ? <SubmitButton className="btn btn-p" name="intent" value="update" pendingText="更新中…">更新</SubmitButton> : <SubmitButton className="btn btn-p" name="intent" value="publish" pendingText="發布中…">發布</SubmitButton>}
+              <SubmitButton className="btn" name="intent" value="schedule" pendingText="排程中…">排程</SubmitButton>
             </div>
             {post && status !== "trash" ? (
-              <p style={{ marginTop: 12 }}><button className="linkbtn del" formAction={trashPostAction}>移到回收桶</button></p>
+              <p style={{ marginTop: 12 }}><SubmitButton className="linkbtn del" formAction={trashPostAction} name="intent" value="trash" pendingText="處理中…">移到回收桶</SubmitButton></p>
             ) : null}
           </div>
           {hasTax ? (

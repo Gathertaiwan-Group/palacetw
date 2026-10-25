@@ -1,4 +1,4 @@
-import { getIndex, published, link, mediaById, visibleProducts, objectsInTerm, blogPosts, termLink, type SiteIndex } from "./data";
+import { getIndex, published, link, mediaById, visibleProducts, objectsInTerm, blogPosts, termLink, setting, type SiteIndex } from "./data";
 import { abs, SITE_URL } from "./site";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -6,13 +6,30 @@ const iso = (s: string | null | undefined) => (s ? new Date(s).toISOString().rep
 
 type Entry = { loc: string; lastmod?: string | null; images?: string[] };
 
+/**
+ * Rank Math sitemap settings (settings.seo): `sitemap_types` = which per-type sitemaps the index lists (old site: post,
+ * page, product — taxonomies off), `sitemap_exclude_ids` = Rank Math "Exclude Posts" (old site's sitemap never had /x/).
+ */
+export async function sitemapConfig() {
+  const ix = await getIndex();
+  const seo = setting<Record<string, any>>(ix, "seo", {});
+  const types: string[] = Array.isArray(seo.sitemap_types) ? seo.sitemap_types : ["post", "page", "product"];
+  const exclude = new Set<number>((Array.isArray(seo.sitemap_exclude_ids) ? seo.sitemap_exclude_ids : []).map(Number));
+  return { types, exclude };
+}
+
 export async function entries(kind: string): Promise<Entry[]> {
+  const { exclude } = await sitemapConfig();
+  return (await rawEntries(kind)).filter((e) => !e.id || !exclude.has(e.id)).map(({ id: _id, ...e }) => e);
+}
+
+async function rawEntries(kind: string): Promise<(Entry & { id?: number })[]> {
   const ix: SiteIndex = await getIndex();
-  if (kind === "page") return published(ix, "page").map((p) => ({ loc: abs(link(p)), lastmod: p.modified_at || p.published_at }));
+  if (kind === "page") return published(ix, "page").map((p) => ({ id: p.id, loc: abs(link(p)), lastmod: p.modified_at || p.published_at }));
   if (kind === "post") {
     const posts = blogPosts(ix);
     const blog = ix.posts.find((p) => p.id === 31);
-    return [...(blog ? [{ loc: abs(link(blog)), lastmod: posts[0]?.modified_at }] : []), ...posts.map((p) => ({ loc: abs(link(p)), lastmod: p.modified_at || p.published_at, images: [mediaById(ix, p.featured_media_id)?.public_url].filter(Boolean) as string[] }))];
+    return [...(blog ? [{ loc: abs(link(blog)), lastmod: posts[0]?.modified_at }] : []), ...posts.map((p) => ({ id: p.id, loc: abs(link(p)), lastmod: p.modified_at || p.published_at, images: [mediaById(ix, p.featured_media_id)?.public_url].filter(Boolean) as string[] }))];
   }
   if (kind === "product") {
     const shop = ix.posts.find((p) => p.id === 1035);
@@ -20,7 +37,7 @@ export async function entries(kind: string): Promise<Entry[]> {
     return [...(shop ? [{ loc: abs(link(shop)), lastmod: prods.map((p) => p.modified_at || "").sort().pop() }] : []), ...prods.map((p) => {
       const pr = ix.products.find((x) => x.post_id === p.id);
       const imgs = [p.featured_media_id, ...(pr?.gallery_image_ids || [])].map((id) => mediaById(ix, id)?.public_url).filter(Boolean) as string[];
-      return { loc: abs(link(p)), lastmod: p.modified_at || p.published_at, images: imgs };
+      return { id: p.id, loc: abs(link(p)), lastmod: p.modified_at || p.published_at, images: imgs };
     })];
   }
   if (kind === "product_cat" || kind === "category") {
@@ -38,7 +55,7 @@ export function urlset(list: Entry[]) {
 }
 
 export async function sitemapIndex() {
-  const kinds = ["post", "page", "product", "product_cat", "category"];
+  const kinds = (await sitemapConfig()).types;
   const parts: string[] = [];
   for (const k of kinds) {
     const list = await entries(k);

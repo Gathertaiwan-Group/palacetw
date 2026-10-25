@@ -1,3 +1,4 @@
+import SubmitButton from "@/components/admin/SubmitButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCoupon } from "@/lib/admin/commerce";
@@ -56,8 +57,8 @@ export default async function Coupon({ params, searchParams }: { params: Promise
         {(c?.product_ids || []).map((pid: number) => <input key={pid} type="hidden" name="product_ids" value={pid} />)}
         {(c?.excluded_product_ids || []).map((pid: number) => <input key={pid} type="hidden" name="excluded_product_ids" value={pid} />)}
         <div className="actions">
-          <button className="btn btn-p">{isNew ? "建立優惠券" : "更新優惠券"}</button>
-          {c ? <button className="btn btn-d" formAction={deleteCouponAction}>刪除</button> : null}
+          <SubmitButton className="btn btn-p" name="_submit" value="save">{isNew ? "建立優惠券" : "更新優惠券"}</SubmitButton>
+          {c ? <SubmitButton className="btn btn-d" formAction={deleteCouponAction} name="_submit" value="delete" pendingText="刪除中…">刪除</SubmitButton> : null}
         </div>
         {c ? <p className="muted">已使用 {c.usage_count} 次{c.used_by?.length ? `：${c.used_by.join(", ")}` : ""}</p> : null}
       </form>

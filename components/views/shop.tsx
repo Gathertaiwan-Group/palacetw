@@ -5,6 +5,7 @@ import { type Post, type SiteIndex, getContent, link, mediaById, productOf, term
 import { ProductList, ShopToolbar, Pagination, PriceHtml, productClasses } from "../woo";
 import ProductGallery from "../ProductGallery";
 import AddToCartForm from "../AddToCartForm";
+import FlashNotice from "../FlashNotice";
 
 const SHOP_BODY = "woocommerce woocommerce-page";
 
@@ -52,7 +53,7 @@ export function ShopArchive({ ix, term, page, sp, base }: { ix: SiteIndex; term:
           </header>
           {slice.length ? (
             <>
-              <div className="woocommerce-notices-wrapper" />
+              <FlashNotice />
               <ShopToolbar base={base} orderby={orderby} perPage={perPage} query={query} />
               <ProductList ix={ix} posts={slice} />
               <Pagination base={base} page={page} pages={pages} query={qs} woo />
@@ -117,7 +118,7 @@ export async function ProductView({ ix, post }: { ix: SiteIndex; post: Post }) {
       header={<PageHeader title={post.title} crumbs={[{ label: post.title }]} />}>
       <ContentWrap contentClass="clr site-content">
         <article className="entry-content entry clr">
-          <div className="woocommerce-notices-wrapper" />
+          <FlashNotice />
           <div id={`product-${post.id}`} className={`entry has-media owp-thumbs-layout-horizontal owp-btn-normal owp-tabs-layout-horizontal has-no-thumbnails has-product-nav ${productClasses(ix, post, "first")}`}>
             <div className="owp-product-nav-wrap clr">
               <ul className="owp-product-nav">

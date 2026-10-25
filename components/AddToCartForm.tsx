@@ -102,6 +102,7 @@ export default function AddToCartForm(props: {
               <a href="#" className="plus" onClick={(e) => { e.preventDefault(); setQty(props.maxQty ? Math.min(props.maxQty, qty + (props.step || 1)) : qty + (props.step || 1)); }}>+</a>
             </div>
           ) : null}
+          {variable ? <><input type="hidden" name="product_id" value={props.productId} /><input type="hidden" name="variation_id" className="variation_id" value={match?.id || ""} /></> : null}
           <button type="submit" name="add-to-cart" value={props.productId} className={`single_add_to_cart_button button alt${busy ? " loading" : ""}${variable && !match ? " disabled wc-variation-selection-needed" : ""}`} disabled={outOfStock}>Add to cart</button>
         </div>
       </form>

@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { admin } from "./supabase";
 import {
-  getIndex, priceInfo, productOf, qtyRulesFor, applyQtyDiscount, mediaById, link, type SiteIndex,
+  getIndex, priceInfo, productOf, isPurchasable, qtyRulesFor, applyQtyDiscount, mediaById, link, type SiteIndex,
 } from "./data";
 
 export const CART_COOKIE = "pt_cart";
@@ -105,4 +105,63 @@ export async function viewCart(cartRow?: any, email?: string): Promise<CartView>
     items, count: items.reduce((s, i) => s + i.quantity, 0), subtotal, discount_total,
     total: Math.round((subtotal - discount_total) * 100) / 100, coupons: list, notices,
   };
+}
+
+export type AddResult =
+  | { ok: true; message: string; cart: CartView; link: string }
+  | { ok: false; error: string; status: number; link: string | null };
+
+/**
+ * Shared add-to-cart used by the AJAX endpoint (/api/cart) and the no-JS form / ?add-to-cart= fallback (/api/cart/form).
+ * For variable products without variation_id, the variation is resolved from attribute_* values (as WooCommerce does).
+ */
+export async function addToCart(input: { productId: number; quantity?: unknown; variationId?: unknown; variation?: Record<string, string> | null }): Promise<AddResult> {
+  const productId = Number(input.productId);
+  const qty = Math.max(1, Math.floor(Number(input.quantity) || 1));
+  const ix = await getIndex();
+  const post = ix.posts.find((p) => p.id === productId && p.post_type === "product" && p.status === "publish");
+  const prod = productOf(ix, productId);
+  if (!post || !prod) return { ok: false, error: "Product not found.", status: 404, link: null };
+  const href = link(post);
+
+  let variationId: number | null = null;
+  let variationAttrs: Record<string, string> = {};
+  if (prod.product_type === "variable") {
+    const sel = input.variation || {};
+    let v = ix.variations.find((x) => x.id === Number(input.variationId) && x.product_id === productId);
+    if (!v && Object.keys(sel).length) {
+      v = ix.variations.find((x) => x.product_id === productId && Object.entries(x.attributes || {}).every(([k, val]) => !val || sel[k] === val)
+        && Object.keys(x.attributes || {}).every((k) => !!sel[k]));
+    }
+    if (!v) return { ok: false, error: "Please choose product options&hellip;", status: 400, link: href };
+    if (!priceInfo(v).has || v.stock_status === "outofstock") return { ok: false, error: "Sorry, this product is unavailable.", status: 400, link: href };
+    variationId = v.id;
+    variationAttrs = { ...(v.attributes || {}), ...sel };
+  } else if (!isPurchasable(prod)) {
+    return { ok: false, error: "Sorry, this product cannot be purchased.", status: 400, link: href };
+  }
+  const unit = variationId ? ix.variations.find((x) => x.id === variationId)! : prod;
+  if (unit.manage_stock && unit.stock_quantity != null && qty > unit.stock_quantity && prod.backorders === "no")
+    return { ok: false, error: `You cannot add that amount to the cart — we have ${unit.stock_quantity} in stock.`, status: 400, link: href };
+
+  const cart = await getCartRow(true);
+  const sb = admin();
+  const { data: existing } = await sb.from("cart_items").select("*").eq("cart_id", cart.id).eq("product_id", productId)
+    .filter("variation_id", variationId ? "eq" : "is", variationId ?? null).maybeSingle();
+  if (existing) {
+    const newQty = prod.sold_individually ? 1 : existing.quantity + qty;
+    await sb.from("cart_items").update({ quantity: newQty }).eq("id", existing.id);
+  } else {
+    await sb.from("cart_items").insert({ cart_id: cart.id, product_id: productId, variation_id: variationId, quantity: prod.sold_individually ? 1 : qty, variation: variationAttrs });
+  }
+  await sb.from("carts").update({ expires_at: new Date(Date.now() + 48 * 3600e3).toISOString() }).eq("id", cart.id);
+  return { ok: true, message: `“${post.title}” has been added to your cart.`, cart: await viewCart(cart), link: href };
+}
+
+/** One-shot notice shown after a no-JS add-to-cart redirect (read by the product / shop pages, cleared by proxy.ts). */
+export const NOTICE_COOKIE = "pt_notice";
+export async function readNotice(): Promise<{ ok: boolean; text: string } | null> {
+  const raw = (await cookies()).get(NOTICE_COOKIE)?.value;
+  if (!raw) return null;
+  try { const v = JSON.parse(decodeURIComponent(raw)); return typeof v?.text === "string" ? { ok: !!v.ok, text: v.text } : null; } catch { return null; }
 }
