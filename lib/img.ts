@@ -1,7 +1,7 @@
 import type { Media, SiteIndex } from "./data";
 
 /**
- * Responsive images. media.variants holds WebP copies 480 / 960 / 1440 px wide (scripts/media-variants.mjs and
+ * Responsive images. media.variants holds WebP copies 320 / 480 / 960 / 1440 px wide (scripts/media-variants.mjs and
  * lib/admin/media.ts); the stored image itself (≤ 2000 px) is the largest srcset candidate.
  */
 export type Variant = { w: number; h: number; url: string; path?: string; bytes?: number };

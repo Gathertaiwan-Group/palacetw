@@ -53,10 +53,10 @@ function guessMime(filename: string, given?: string) {
 }
 
 /** Responsive WebP widths (same as scripts/media-variants.mjs); only widths smaller than the stored image are made. */
-const VARIANT_WIDTHS = [480, 960, 1440];
+const VARIANT_WIDTHS = [320, 480, 960, 1440];
 const variantPath = (storagePath: string, w: number) => `v/${w}/${storagePath.replace(/\.[^./]+$/, "")}.webp`;
 
-/** Makes and uploads the 480 / 960 / 1440 WebP variants (quality 75, immutable cache) for a raster image. */
+/** Makes and uploads the 320 / 480 / 960 / 1440 WebP variants (quality 75, immutable cache) for a raster image. */
 export async function makeVariants(source: Buffer, storagePath: string, storedWidth: number | null) {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

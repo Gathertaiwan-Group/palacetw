@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Responsive image variants for site_palacetw.media.
- *   node scripts/media-variants.mjs [--export ~/gather-migrate/palacetw/export] [--force] [--only <id,id>]
- * For every raster image (not GIF/SVG) it makes WebP versions 480 / 960 / 1440 px wide (quality 75, never upscaled:
+ *   node scripts/media-variants.mjs [--export ~/gather-migrate/palacetw/export] [--force] [--only <id,id>] [--add-width 320]
+ * --add-width <w>: only make that one width for images whose stored variants lack it, and merge it into media.variants.
+ * For every raster image (not GIF/SVG) it makes WebP versions 320 / 480 / 960 / 1440 px wide (quality 75, never upscaled:
  * only widths smaller than the stored image), uploads them to bucket site-palacetw at v/<w>/<storage path>.webp with
  * `cache-control: public, max-age=31536000, immutable`, and records them in media.variants.
  * Source = the original file from the WordPress export (matched by media.old_url) when present, otherwise the stored
@@ -14,7 +15,6 @@ import path from "node:path";
 import os from "node:os";
 import sharp from "sharp";
 
-const WIDTHS = [480, 960, 1440];
 const BUCKET = "site-palacetw";
 const SCHEMA = "site_palacetw";
 const URL_ = process.env.SUPABASE_URL;
@@ -22,6 +22,8 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!URL_ || !KEY) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing");
 const args = process.argv.slice(2);
 const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
+const ADD = (() => { const i = args.indexOf("--add-width"); return i >= 0 ? args[i + 1] : null; })();
+const WIDTHS = ADD ? [Number(ADD)] : [320, 480, 960, 1440];
 const FORCE = args.includes("--force");
 const ONLY = opt("--only") ? new Set(opt("--only").split(",").map(Number)) : null;
 const EXPORT = (opt("--export") || path.join(os.homedir(), "gather-migrate/palacetw/export")).replace(/^~/, os.homedir());
@@ -59,21 +61,24 @@ async function upload(p, buf) {
 }
 
 const rows = await rest("media?select=id,storage_path,old_url,mime_type,width,height,variants&order=id");
-const todo = rows.filter((r) => (!ONLY || ONLY.has(r.id)) && /^image\//.test(r.mime_type) && !/gif|svg/.test(r.mime_type) && r.width && (FORCE || !(r.variants || []).length));
+const todo = rows.filter((r) => (!ONLY || ONLY.has(r.id)) && /^image\//.test(r.mime_type) && !/gif|svg/.test(r.mime_type) && r.width && (FORCE || (ADD ? !(r.variants || []).some((v) => v.w === Number(ADD)) : !(r.variants || []).length)));
 let made = 0, bytes = 0, origBytes = 0;
 const queue = [...todo];
 async function worker() {
   for (let row; (row = queue.shift()); ) {
     const { buf, from } = await source(row);
-    const variants = [];
+    const variants = ADD ? [...(row.variants || [])] : [];
+    let added = 0;
     for (const w of WIDTHS) {
       if (w >= row.width) continue; // never upscale; the stored image itself is the largest candidate
       const { data, info } = await sharp(buf, { failOn: "none" }).rotate().resize({ width: w, withoutEnlargement: true }).webp({ quality: 75 }).toBuffer({ resolveWithObject: true });
       const p = variantPath(row.storage_path, w);
       await upload(p, data);
+      added++;
       variants.push({ w: info.width, h: info.height, path: p, url: publicUrl(p), bytes: data.length });
       made++; bytes += data.length;
     }
+    variants.sort((a, b) => a.w - b.w);
     await rest(`media?id=eq.${row.id}`, { method: "PATCH", body: JSON.stringify({ variants }), headers: { Prefer: "return=minimal" } });
     console.log(`${row.id} ${row.storage_path} [${from}] ${row.width}px -> ${variants.map((v) => `${v.w}:${v.bytes}`).join(" ") || "(no smaller widths)"}`);
   }
